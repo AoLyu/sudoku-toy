@@ -33,16 +33,18 @@ private:
 
     bool res;
 
-    std::vector<std::vector<int>> matrix;
-
-    bool isValidate(std::vector<std::vector<int>>& matrix , int row, int col);
+    bool isValidate(int val, int row, int col);
 
     std::vector<QLineEdit*> lineEditArr;
 
     std::vector<int> nums;
 
-    void solveMatrix(std::vector<std::vector<int>>& matrix , int cur);
+    std::vector<std::vector<int>> matrix;
 
-    void findSolution();
+    void solveMatrix(int cur);
+
+    void matrixToLineEdit();
+
+    void LineEditToMatrix();
 };
 #endif // MAINWINDOW_H

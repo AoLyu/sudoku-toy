@@ -25,8 +25,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
-
 // 清空
 void MainWindow::on_pushButton2_clicked()
 {
@@ -34,42 +32,50 @@ void MainWindow::on_pushButton2_clicked()
     {
         lineEditArr[i]->setText("");
     }
+
+    LineEditToMatrix();
 }
 
 // 随机
 void MainWindow::on_pushButton0_clicked()
 {
+    for(int i = 0; i < nums.size()-1 ; ++i)
+    {
+        int change =QRandomGenerator::global()->bounded(n-i);
+        if(change!=0)
+            std::swap(nums[i],nums[i+change]);
+    }
 
     res = false;
 
     while(!res)
     {
-        for(int i = 0; i < nums.size()-1 ; ++i)
-        {
-            int change =QRandomGenerator::global()->bounded(n-i);
-            if(change!=0)
-                std::swap(nums[i],nums[i+change]);
-        }
 
         for(int i = 0 ; i < lineEditArr.size(); ++i)
         {
             lineEditArr[i]->setText("");
         }
 
-        findSolution();
+        LineEditToMatrix();
 
-        for(int i = 0; i < n * n; ++i)
+        solveMatrix(0);
+
+        for(int i = 0; i < n ; ++i)
         {
-            int row = i / n;
-            int col = i % n;
-            int hide =QRandomGenerator::global()->bounded(100);
-            if(lineEditArr[i]->text().isEmpty() && (hide & 1) !=0)
+            for(int j = 0 ; j < n ; ++j )
             {
-
-                lineEditArr[i]->setText(QString::number(matrix[row][col]));
+                int hide =QRandomGenerator::global()->bounded(100);
+                if((hide & 1) == 1)
+                {
+                    matrix[i][j] = 0;
+                }
             }
         }
-        findSolution();
+
+        matrixToLineEdit();
+
+        solveMatrix(0);
+
     }
 
 }
@@ -84,28 +90,21 @@ void MainWindow::on_pushButton1_clicked()
             std::swap(nums[i],nums[i+change]);
     }
 
-    findSolution();
+    res = false;
+
+    LineEditToMatrix();
+
+    solveMatrix(0);
 
     if(res)
     {
-        for(int i = 0; i < n * n; ++i)
-        {
-            int row = i / n;
-            int col = i % n;
-            if(lineEditArr[i]->text().isEmpty())
-            {
-                lineEditArr[i]->setText(QString::number(matrix[row][col]));
-            }
-        }
+        matrixToLineEdit();
     }
     else
     {
         QMessageBox::critical(this, tr("错误"), tr("当前数独无解！"));
     }
 }
-
-
-
 
 void MainWindow::init()
 {
@@ -116,59 +115,54 @@ void MainWindow::init()
     {
         QLineEdit* lineEdit = findChild<QLineEdit *>("lineEdit"+QString::number(i));
         lineEdit->setValidator(a);
+        lineEdit->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
         lineEditArr.push_back(lineEdit);
     }
 }
 
-bool MainWindow::isValidate(std::vector<std::vector<int> > &matrix, int row, int col)
+bool MainWindow::isValidate(int val, int row, int col)
 {
     int blockRow =  row/2;
     int blockCol = col/3;
 
-    for(int i = blockRow*2 ; i <= row; i++)
+    for(int i = blockRow*2 ; i < blockRow*2+2; i++)
     {
         for(int j = blockCol*3 ; j < blockCol*3+3; j++)
         {
-            if(i==row && j == col)
-                continue;
 
-            if(matrix[i][j] == matrix[row][col])
+            if(matrix[i][j] == val)
                 return false;
         }
     }
 
-    for(int i = 0 ; i < row ; ++i)
+    for(int i = 0 ; i < n ; ++i)
     {
-        if(matrix[i][col] == matrix[row][col])
+        if(matrix[i][col] == val || matrix[row][i] == val)
             return false;
     }
-    for(int i = 0; i <col ;++i)
-    {
-        if(matrix[row][i] == matrix[row][col])
-            return false;
-    }
+
     if(row == col)
     {
-        for(int i = 0 ; i < row ; i++)
+        for(int i = 0 ; i < n ; i++)
         {
-            if(matrix[i][i] == matrix[row][col])
+            if(matrix[i][i] == val)
                 return false;
         }
     }
     if(row + col == n-1)
     {
-        for(int i = 0 ; i < row ; i++)
+        for(int i = 0 ; i < n ; i++)
         {
-            if(matrix[i][n-i-1] == matrix[row][col])
+            if(matrix[i][n-i-1] == val)
                 return false;
         }
     }
     return true;
 }
 
-void MainWindow::solveMatrix(std::vector<std::vector<int> >& matrix, int cur)
+void MainWindow::solveMatrix(int cur)
 {
-    if( cur == 36)
+    if( cur == n*n)
     {
         res = true;
         return;
@@ -179,29 +173,39 @@ void MainWindow::solveMatrix(std::vector<std::vector<int> >& matrix, int cur)
 
     if(matrix[row][col]>0)
     {
-        solveMatrix(matrix,cur+1);
+        solveMatrix(cur+1);
     }
     else
     {
-        int i = 0;
-        for(; i < nums.size() ; ++i )
+        for(int i = 0; i < nums.size() ; ++i )
         {
-            matrix[row][col] = nums[i];
-            if(isValidate(matrix ,row, col))
+
+            if(isValidate(nums[i] ,row, col))
             {
-                solveMatrix(matrix,cur+1);
+                matrix[row][col] = nums[i];
+                solveMatrix(cur+1);
                 if(res)
                     return;
+                matrix[row][col] = 0;
             }
-            matrix[row][col] = 0;
         }
-
     }
-
-
 }
 
-void MainWindow::findSolution()
+void MainWindow::matrixToLineEdit()
+{
+    for(int i = 0; i < n * n; ++i)
+    {
+        int row = i / n;
+        int col = i % n;
+        if(matrix[row][col] == 0)
+            continue;
+
+        lineEditArr[i]->setText(QString::number(matrix[row][col]));
+    }
+}
+
+void MainWindow::LineEditToMatrix()
 {
     for(int i = 0; i < n*n; ++i)
     {
@@ -214,10 +218,5 @@ void MainWindow::findSolution()
 
         matrix[row][col] = lineEditArr[i]->text().toInt();
     }
-
-    res = false;
-
-    solveMatrix(matrix,0);
-
 }
 
